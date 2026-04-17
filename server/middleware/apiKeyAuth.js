@@ -24,14 +24,16 @@ const apiKeyAuth = async (req, res, next) => {
       return res.status(404).json({ error: 'Bot not found or deactivated' });
     }
 
-    // Origin check
+    // Origin check — always enforce if origins are configured
+    const origin = req.headers.origin || req.headers.referer || '';
+
     if (bot.allowedOrigins.length > 0) {
-      const origin = req.headers.origin || req.headers.referer || '';
-      const allowed = bot.allowedOrigins.some((o) => origin.includes(o));
-      if (!allowed && origin) {
+    const allowed = bot.allowedOrigins.some((o) => origin.includes(o));
+    if (!allowed) {
         return res.status(403).json({ error: 'Origin not allowed for this API key' });
-      }
     }
+    }
+
 
     // Increment usage
     apiKey.usageCount += 1;

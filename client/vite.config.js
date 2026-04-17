@@ -6,11 +6,26 @@ export default defineConfig({
   server: {
     allowedHosts: ['.ngrok-free.app'], // 👈 FIX
     port: 5173,
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://localhost:5001',
+    //     changeOrigin: true,
+    //   },
+    // },
+
     proxy: {
-      '/api': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-      },
-    },
+  '/api': {
+    target: 'http://localhost:5001',
+    changeOrigin: true,
+  },
+  '/widget': {
+    target: 'http://localhost:5001',
+    changeOrigin: true,
+  },
+  '/v1': {
+    target: 'http://localhost:5001',
+    changeOrigin: true,
+  },
+},
   },
 });
