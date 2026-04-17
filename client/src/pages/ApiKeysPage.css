@@ -1,0 +1,120 @@
+.keys-page { margin-top: 4px; }
+
+.new-key-banner {
+  background: #1a2a1a;
+  border: 1px solid #2a5a2a;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.new-key-banner p { font-size: 13px; }
+.key-display {
+  display: block;
+  background: var(--bg-input);
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  word-break: break-all;
+  color: #7aff7a;
+  cursor: pointer;
+}
+.new-key-banner button {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.key-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.key-form select,
+.key-form input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+.key-form select { min-width: 180px; }
+.key-form input { flex: 1; min-width: 120px; }
+.key-form select:focus, .key-form input:focus { border-color: var(--accent); }
+
+.key-form button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.key-form button:hover { background: var(--accent-hover); }
+
+.keys-list { display: flex; flex-direction: column; gap: 6px; }
+
+.key-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.key-card.revoked { opacity: 0.5; }
+
+.key-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.key-prefix {
+  font-family: monospace;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.key-label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.key-bot {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.key-usage {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.revoked-badge {
+  font-size: 11px;
+  color: var(--error);
+  border: 1px solid var(--error);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
