@@ -37,8 +37,10 @@ const publicCors = cors();
 
 app.use(express.json({ limit: '1mb' }));
 
+// ── Internal routes (your own chatbot UI) ──
+app.use('/api', dashboardCors, authMiddleware, chatRouter);
+
 // ── Dashboard API (JWT protected) ──
-// Auth routes MUST come first (login/register don't require JWT)
 app.use('/api/auth', dashboardCors, authRouter);
 app.use('/api/bots', dashboardCors, authMiddleware, botsRouter);
 app.use('/api/keys', dashboardCors, authMiddleware, keysRouter);
@@ -48,14 +50,15 @@ app.use('/api/payments', dashboardCors, authMiddleware, paymentsRouter);
 // ── Admin API (JWT + admin role) ──
 app.use('/api/admin', dashboardCors, authMiddleware, adminMiddleware, adminRouter);
 
-// ── Internal chat routes (JWT protected) ──
-app.use('/api', dashboardCors, authMiddleware, chatRouter);
-
 // ── Public API (API key protected) — open CORS ──
 app.use('/v1', publicCors, v1Router);
 
-// ── Embeddable widget — open CORS ──
-app.use('/widget', publicCors, express.static('public/widget'));
+
+// ── Embeddable widget — open CORS + cross-origin resource policy ──
+app.use('/widget', publicCors, (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static('public/widget'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
