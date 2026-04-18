@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getBot, updateBot, addKnowledge, deleteKnowledge, getConversations } from '../api';
+import { getBot, updateBot, addKnowledge, deleteKnowledge, getConversations, getKeys, createKey, revokeKey } from '../api';
 import './BotDetail.css';
 
 export default function BotDetail({ botId, onBack }) {
@@ -19,6 +19,11 @@ export default function BotDetail({ botId, onBack }) {
   // Conversations
   const [conversations, setConversations] = useState([]);
   const [expandedConvo, setExpandedConvo] = useState(null);
+
+  // API Keys
+  const [keys, setKeys] = useState([]);
+  const [keyLabel, setKeyLabel] = useState('');
+  const [copiedKeyId, setCopiedKeyId] = useState(null);
 
   const loadBot = async () => {
     try {
@@ -41,8 +46,44 @@ export default function BotDetail({ botId, onBack }) {
     }
   };
 
-  useEffect(() => { loadBot(); }, [botId]);
+  useEffect(() => { loadBot(); loadKeys(); }, [botId]);
   useEffect(() => { if (section === 'conversations') loadConversations(); }, [section]);
+
+  const loadKeys = async () => {
+    try {
+      const data = await getKeys(botId);
+      setKeys(data.keys);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleCreateKey = async (e) => {
+    e.preventDefault();
+    try {
+      await createKey(botId, keyLabel || 'Default');
+      setKeyLabel('');
+      loadKeys();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRevokeKey = async (id) => {
+    if (!confirm('Revoke this API key? It will stop working immediately.')) return;
+    try {
+      await revokeKey(id);
+      loadKeys();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleCopyKey = (key, id) => {
+    navigator.clipboard?.writeText(key);
+    setCopiedKeyId(id);
+    setTimeout(() => setCopiedKeyId(null), 2000);
+  };
 
   const handleAddKnowledge = async (e) => {
     e.preventDefault();
@@ -97,6 +138,7 @@ export default function BotDetail({ botId, onBack }) {
       <div className="bd-tabs">
         <button data-active={section === 'knowledge'} onClick={() => setSection('knowledge')}>Knowledge Base</button>
         <button data-active={section === 'settings'} onClick={() => setSection('settings')}>Settings</button>
+        <button data-active={section === 'apikeys'} onClick={() => setSection('apikeys')}>API Keys</button>
         <button data-active={section === 'conversations'} onClick={() => setSection('conversations')}>Conversations</button>
         <button data-active={section === 'embed'} onClick={() => setSection('embed')}>Embed Code</button>
       </div>
@@ -164,6 +206,47 @@ export default function BotDetail({ botId, onBack }) {
         </div>
       )}
 
+      {/* API Keys */}
+      {section === 'apikeys' && (
+        <div className="bd-section">
+          <form className="key-form" onSubmit={handleCreateKey}>
+            <input placeholder="Label (optional)" value={keyLabel} onChange={(e) => setKeyLabel(e.target.value)} />
+            <button type="submit">Generate New Key</button>
+          </form>
+
+          <div className="keys-list">
+            {keys.length === 0 ? (
+              <p className="muted">No API keys yet. Generate one above.</p>
+            ) : (
+              keys.map((k) => (
+                <div key={k._id} className={`key-card ${!k.isActive ? 'revoked' : ''}`}>
+                  <div className="key-info">
+                    <span className="key-label">{k.label}</span>
+                    <span className="key-usage">{k.usageCount} uses</span>
+                  </div>
+                  <div className="key-value-row">
+                    <code className="key-full">{k.rawKey || `${k.prefix}...`}</code>
+                    {k.isActive && k.rawKey && (
+                      <button
+                        className="copy-btn"
+                        onClick={() => handleCopyKey(k.rawKey, k._id)}
+                      >
+                        {copiedKeyId === k._id ? '✓ Copied' : 'Copy'}
+                      </button>
+                    )}
+                  </div>
+                  {k.isActive ? (
+                    <button className="delete-btn" onClick={() => handleRevokeKey(k._id)}>Revoke</button>
+                  ) : (
+                    <span className="revoked-badge">Revoked</span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Conversations */}
       {section === 'conversations' && (
         <div className="bd-section">
@@ -199,27 +282,38 @@ export default function BotDetail({ botId, onBack }) {
             Paste this script tag into your website's HTML before the closing <code>&lt;/body&gt;</code> tag.
             Your customers will see a chat widget in the bottom-right corner.
           </p>
-          <p className="muted" style={{ marginBottom: 12 }}>
-            ⚠️ You need an API key first. Go to the <strong>API Keys</strong> tab on the dashboard to generate one.
-          </p>
-          <textarea
-            className="embed-code"
-            readOnly
-            rows={6}
-            value={`<script>
+          {(() => {
+            const activeKey = keys.find((k) => k.isActive && k.rawKey);
+            const apiKeyValue = activeKey ? activeKey.rawKey : 'YOUR_API_KEY_HERE';
+            const embedCode = `<script>
   window.CHATBOT_CONFIG = {
-    apiKey: "sk-cb-YOUR_ACTUAL_API_KEY_HERE",
-    serverUrl: "http://localhost:5001",
+    apiKey: "${apiKeyValue}",
+    serverUrl: "https://chatbotagent.chat",
 
     // Optional:
     // position: "bottom-right",   // or "bottom-left"
     // primaryColor: "#7c6af7"     // your brand color
   };
 </script>
-<script src="http://localhost:5001/widget/chatbot-widget.js"></script>`}
-            onClick={(e) => { e.target.select(); navigator.clipboard?.writeText(e.target.value); }}
-          />
-          <p className="muted" style={{ marginTop: 8 }}>Click to copy. Replace <code>YOUR_API_KEY_HERE</code> with your actual API key.</p>
+<script src="https://chatbotagent.chat/widget/chatbot-widget.js"></script>`;
+            return (
+              <>
+                {!activeKey && (
+                  <p className="muted" style={{ marginBottom: 12 }}>
+                    ⚠️ No active API key found. Go to the <strong>API Keys</strong> tab to generate one.
+                  </p>
+                )}
+                <textarea
+                  className="embed-code"
+                  readOnly
+                  rows={6}
+                  value={embedCode}
+                  onClick={(e) => { e.target.select(); navigator.clipboard?.writeText(e.target.value); }}
+                />
+                <p className="muted" style={{ marginTop: 8 }}>Click to copy.</p>
+              </>
+            );
+          })()}
         </div>
       )}
     </div>

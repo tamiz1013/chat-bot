@@ -49,7 +49,7 @@ export const deleteKnowledge = (botId, entryId) =>
   request(`/bots/${botId}/knowledge/${entryId}`, { method: 'DELETE' });
 
 // API Keys
-export const getKeys = () => request('/keys');
+export const getKeys = (botId) => request(`/keys${botId ? `?botId=${botId}` : ''}`);
 export const createKey = (botId, label) =>
   request('/keys', { method: 'POST', body: JSON.stringify({ botId, label }) });
 export const revokeKey = (id) =>

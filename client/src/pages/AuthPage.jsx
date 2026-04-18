@@ -40,8 +40,8 @@ export default function AuthPage() {
       <div className="auth-hero">
         <div className="auth-hero-content">
           <div className="auth-brand">
-            <div className="auth-brand-icon">B</div>
-            <span>BotForge</span>
+            <div className="auth-brand-icon">C</div>
+            <span>ChatBotAgent</span>
           </div>
           <h1 className="auth-headline">Build AI Chatbots<br />for Your Business</h1>
           <p className="auth-tagline">

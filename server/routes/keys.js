@@ -3,16 +3,20 @@ const router = express.Router();
 const ApiKey = require('../models/ApiKey');
 const Bot = require('../models/Bot');
 
-// GET /api/keys — list user's API keys (masked)
+// GET /api/keys — list user's API keys
 router.get('/', async (req, res) => {
   try {
-    const keys = await ApiKey.find({ userId: req.user._id })
+    const filter = { userId: req.user._id };
+    if (req.query.botId) filter.botId = req.query.botId;
+
+    const keys = await ApiKey.find(filter)
       .populate('botId', 'name')
       .sort('-createdAt');
 
-    const masked = keys.map((k) => ({
+    const result = keys.map((k) => ({
       _id: k._id,
       prefix: k.prefix,
+      rawKey: k.rawKey || null,
       label: k.label,
       botId: k.botId,
       isActive: k.isActive,
@@ -21,7 +25,7 @@ router.get('/', async (req, res) => {
       createdAt: k.createdAt,
     }));
 
-    res.json({ keys: masked });
+    res.json({ keys: result });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch API keys' });
   }
@@ -44,17 +48,16 @@ router.post('/', async (req, res) => {
       botId,
       keyHash,
       prefix,
+      rawKey: raw,
       label: label || 'Default',
     });
 
-    // Return raw key only this once
     res.status(201).json({
       key: raw,
       _id: apiKey._id,
       prefix: apiKey.prefix,
       label: apiKey.label,
       botId: apiKey.botId,
-      message: 'Save this key now — it won\'t be shown again.',
     });
   } catch (err) {
     console.error('Generate key error:', err.message);

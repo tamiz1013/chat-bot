@@ -5,7 +5,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: botforge-server
+    container_name: chatbotagent-server
     ports:
       - "5001:5001"
     env_file:
@@ -21,7 +21,7 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
-    container_name: botforge-client
+    container_name: chatbotagent-client
     ports:
       - "80:80"
     depends_on:

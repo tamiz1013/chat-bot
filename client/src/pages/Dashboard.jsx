@@ -2,17 +2,17 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getStats, getBots, createBot, deleteBot } from '../api';
 import BotDetail from './BotDetail';
-import ApiKeysPage from './ApiKeysPage';
 import './Dashboard.css';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('overview');
   const [stats, setStats] = useState(null);
   const [bots, setBots] = useState([]);
   const [selectedBotId, setSelectedBotId] = useState(null);
   const [newBotName, setNewBotName] = useState('');
+  const [newBotOrigin, setNewBotOrigin] = useState('');
   const [error, setError] = useState('');
+  const [createdKey, setCreatedKey] = useState('');
 
   const loadData = async () => {
     try {
@@ -30,8 +30,11 @@ export default function Dashboard() {
     e.preventDefault();
     if (!newBotName.trim()) return;
     try {
-      await createBot({ name: newBotName.trim() });
+      const allowedOrigins = newBotOrigin.trim() ? newBotOrigin.split(',').map((o) => o.trim()).filter(Boolean) : [];
+      const data = await createBot({ name: newBotName.trim(), allowedOrigins });
       setNewBotName('');
+      setNewBotOrigin('');
+      if (data.apiKey) setCreatedKey(data.apiKey);
       loadData();
     } catch (err) {
       setError(err.message);
@@ -61,24 +64,24 @@ export default function Dashboard() {
           <h1>Dashboard</h1>
           <p className="dash-greeting">Welcome back, <strong>{user?.name}</strong></p>
         </div>
-        <div className="dash-tabs">
-          <button className={`dash-tab ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            Overview
-          </button>
-          <button className={`dash-tab ${tab === 'keys' ? 'active' : ''}`} onClick={() => setTab('keys')}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-            API Keys
-          </button>
-        </div>
       </div>
 
       {error && <div className="dash-error">{error}</div>}
 
-      {tab === 'keys' ? (
-        <ApiKeysPage bots={bots} />
-      ) : (
-        <>
+      {/* New API Key Banner */}
+      {createdKey && (
+        <div className="new-key-banner">
+          <p><strong>🔑 API Key auto-generated for your new bot:</strong></p>
+          <code
+            className="key-display"
+            onClick={() => { navigator.clipboard?.writeText(createdKey); alert('Copied!'); }}
+          >
+            {createdKey}
+          </code>
+          <button onClick={() => setCreatedKey('')}>Dismiss</button>
+        </div>
+      )}
+
           {/* Stats */}
           {stats && (
             <div className="stats-grid">
@@ -122,6 +125,11 @@ export default function Dashboard() {
               value={newBotName}
               onChange={(e) => setNewBotName(e.target.value)}
             />
+            <input
+              placeholder="Allowed origin (e.g. https://mysite.com)"
+              value={newBotOrigin}
+              onChange={(e) => setNewBotOrigin(e.target.value)}
+            />
             <button type="submit">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Create Bot
@@ -159,8 +167,6 @@ export default function Dashboard() {
               ))
             )}
           </div>
-        </>
-      )}
     </div>
   );
 }

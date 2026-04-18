@@ -30,8 +30,8 @@ function AppInner() {
       <nav className="top-bar">
         <div className="top-bar-left">
           <div className="brand" onClick={() => setView('dashboard')}>
-            <div className="brand-icon">B</div>
-            <span className="brand-name">BotForge</span>
+            <div className="brand-icon">C</div>
+            <span className="brand-name">ChatBotAgent</span>
           </div>
         </div>
 

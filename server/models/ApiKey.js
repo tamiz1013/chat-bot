@@ -6,6 +6,7 @@ const apiKeySchema = new mongoose.Schema({
   botId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bot', required: true, index: true },
   keyHash: { type: String, required: true, unique: true },
   prefix: { type: String, required: true, index: true }, // first 8 chars for lookup
+  rawKey: { type: String }, // stored so user can always view/copy
   label: { type: String, default: 'Default', trim: true },
   isActive: { type: Boolean, default: true },
   usageCount: { type: Number, default: 0 },

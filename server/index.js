@@ -23,7 +23,7 @@ connectDB();
 
 // ── CORS ──
 // Dashboard routes: restricted to known dev origins
-const dashboardCors = cors({ origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173'] });
+const dashboardCors = cors({ origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173', 'https://chatbotagent.chat'] });
 // Public API + widget: any origin (protected by API key auth)
 const publicCors = cors();
 

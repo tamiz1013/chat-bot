@@ -319,9 +319,127 @@
 
 .embed-code:focus { border-color: var(--accent); }
 
+/* ── API Keys inside Bot Detail ──────────────── */
+.key-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.key-form input {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.key-form button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.key-form button:hover {
+  filter: brightness(1.1);
+}
+
+.keys-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.key-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.key-card.revoked {
+  opacity: 0.5;
+}
+
+.key-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.key-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.key-usage {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.key-value-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.key-full {
+  flex: 1;
+  background: var(--bg-hover);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--accent);
+  word-break: break-all;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.copy-btn {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.copy-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.revoked-badge {
+  font-size: 11px;
+  color: #f08080;
+  background: rgba(240, 128, 128, 0.1);
+  padding: 3px 10px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .bot-detail { padding: 20px 16px; }
   .bd-tabs { width: 100%; overflow-x: auto; }
   .settings-row { grid-template-columns: 1fr; }
+  .key-form { flex-direction: column; }
 }

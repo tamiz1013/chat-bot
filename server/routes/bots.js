@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Bot = require('../models/Bot');
+const ApiKey = require('../models/ApiKey');
 const PLAN_LIMITS = require('../config/plans');
 
 // GET /api/bots — list user's bots
@@ -36,7 +37,18 @@ router.post('/', async (req, res) => {
       allowedOrigins: allowedOrigins || [],
     });
 
-    res.status(201).json({ bot });
+    // Auto-generate an API key for the new bot
+    const { raw, prefix, keyHash } = ApiKey.generateKey();
+    await ApiKey.create({
+      userId: req.user._id,
+      botId: bot._id,
+      keyHash,
+      prefix,
+      rawKey: raw,
+      label: 'Default',
+    });
+
+    res.status(201).json({ bot, apiKey: raw });
   } catch (err) {
     console.error('Create bot error:', err.message);
     res.status(500).json({ error: 'Failed to create bot' });
