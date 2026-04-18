@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const connectDB = require('./config/db');
 const { authMiddleware } = require('./middleware/auth');
 
@@ -21,18 +22,23 @@ const PORT = process.env.PORT || 5001;
 // Connect to MongoDB
 connectDB();
 
+// ── Security ──
+app.use(helmet());
+app.set('trust proxy', 1);
+
 // ── CORS ──
-// Dashboard routes: restricted to known dev origins
-const dashboardCors = cors({ origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173', 'https://chatbotagent.chat'] });
+const isProd = process.env.NODE_ENV === 'production';
+const dashboardOrigins = isProd
+  ? ['https://chatbotagent.chat', 'https://www.chatbotagent.chat']
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173', 'https://chatbotagent.chat'];
+const dashboardCors = cors({ origin: dashboardOrigins, credentials: true });
 // Public API + widget: any origin (protected by API key auth)
 const publicCors = cors();
 
-app.use(express.json());
-
-// ── Internal routes (your own chatbot UI) ──
-app.use('/api', dashboardCors, chatRouter);
+app.use(express.json({ limit: '1mb' }));
 
 // ── Dashboard API (JWT protected) ──
+// Auth routes MUST come first (login/register don't require JWT)
 app.use('/api/auth', dashboardCors, authRouter);
 app.use('/api/bots', dashboardCors, authMiddleware, botsRouter);
 app.use('/api/keys', dashboardCors, authMiddleware, keysRouter);
@@ -41,6 +47,9 @@ app.use('/api/payments', dashboardCors, authMiddleware, paymentsRouter);
 
 // ── Admin API (JWT + admin role) ──
 app.use('/api/admin', dashboardCors, authMiddleware, adminMiddleware, adminRouter);
+
+// ── Internal chat routes (JWT protected) ──
+app.use('/api', dashboardCors, authMiddleware, chatRouter);
 
 // ── Public API (API key protected) — open CORS ──
 app.use('/v1', publicCors, v1Router);

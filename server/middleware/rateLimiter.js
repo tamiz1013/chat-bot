@@ -37,7 +37,7 @@ const rateLimiter = async (req, res, next) => {
     next();
   } catch (err) {
     console.error('Rate limiter error:', err.message);
-    next(); // fail open — don't block on rate-limit errors
+    return res.status(500).json({ error: 'Rate limit check failed. Please try again.' });
   }
 };
 

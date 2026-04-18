@@ -6,13 +6,14 @@ services:
       context: ./server
       dockerfile: Dockerfile
     container_name: chatbotagent-server
-    ports:
-      - "5001:5001"
+    # No host port mapping — only accessible from within Docker network
+    expose:
+      - "5001"
     env_file:
       - ./server/.env
     environment:
-      # Override so the server can reach Ollama running on the host machine
       OLLAMA_URL: http://host.docker.internal:11434
+      NODE_ENV: production
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -23,7 +24,7 @@ services:
       dockerfile: Dockerfile
     container_name: chatbotagent-client
     ports:
-      - "80:80"
+      - "127.0.0.1:80:80"   # Bind to localhost only — cloudflared connects here
     depends_on:
       - server
     restart: unless-stopped
