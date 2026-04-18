@@ -23,7 +23,11 @@ const PORT = process.env.PORT || 5001;
 connectDB();
 
 // ── Security ──
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false
+}));
 app.set('trust proxy', 1);
 
 // ── CORS ──
