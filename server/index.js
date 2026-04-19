@@ -42,17 +42,14 @@ const publicCors = cors();
 app.use(express.json({ limit: '1mb' }));
 
 // ── Internal routes (your own chatbot UI) ──
-app.use('/api', dashboardCors, authMiddleware, chatRouter);
-
-// ── Dashboard API (JWT protected) ──
-app.use('/api/auth', dashboardCors, authRouter);
+// Fixed order:
+app.use('/api/auth', dashboardCors, authRouter);                  // ← auth first (no authMiddleware)
 app.use('/api/bots', dashboardCors, authMiddleware, botsRouter);
 app.use('/api/keys', dashboardCors, authMiddleware, keysRouter);
 app.use('/api/dashboard', dashboardCors, authMiddleware, dashboardRouter);
 app.use('/api/payments', dashboardCors, authMiddleware, paymentsRouter);
-
-// ── Admin API (JWT + admin role) ──
 app.use('/api/admin', dashboardCors, authMiddleware, adminMiddleware, adminRouter);
+app.use('/api', dashboardCors, authMiddleware, chatRouter);       // ← catch-all LAST
 
 // ── Public API (API key protected) — open CORS ──
 app.use('/v1', publicCors, v1Router);

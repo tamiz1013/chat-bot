@@ -1,3 +1,35 @@
+# Dependencies
 node_modules/
+**/node_modules/
+
+# Environment variables
 .env
+.env.*
+!.env.example
+
+# Build output
 dist/
+**/dist/
+build/
+**/build/
+
+# Google OAuth secrets
+*.apps.googleusercontent.com.json
+client_secret_*.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Docker
+*.tar
+

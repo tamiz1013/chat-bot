@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
-import { login, register } from '../api';
+import { googleLogin } from '../api';
 import './AuthPage.css';
 
 const FEATURES = [
@@ -12,26 +13,20 @@ const FEATURES = [
 
 export default function AuthPage() {
   const { loginUser } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleGoogleSuccess = async (credentialResponse) => {
     setError('');
-    setLoading(true);
-
     try {
-      const data = isLogin
-        ? await login(form.email, form.password)
-        : await register(form.name, form.email, form.password);
+      const data = await googleLogin(credentialResponse.credential);
       loginUser(data.user, data.token);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google sign-in failed. Please try again.');
   };
 
   return (
@@ -62,65 +57,25 @@ export default function AuthPage() {
         <div className="auth-hero-bg" />
       </div>
 
-      {/* Right: Form */}
+      {/* Right: Google Login */}
       <div className="auth-form-side">
         <div className="auth-card">
-          <h2 className="auth-title">{isLogin ? 'Welcome back' : 'Get started'}</h2>
-          <p className="auth-subtitle">{isLogin ? 'Sign in to your dashboard' : 'Create your free account'}</p>
+          <h2 className="auth-title">Welcome</h2>
+          <p className="auth-subtitle">Sign in to your dashboard</p>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            {!isLogin && (
-              <div className="form-group">
-                <label>Name</label>
-                <input
-                  type="text"
-                  placeholder="John Doe"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
-              </div>
-            )}
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-                minLength={6}
-              />
-            </div>
+          <div className="google-login-wrapper">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              size="large"
+              width="380"
+              text="continue_with"
+              shape="rectangular"
+              theme="outline"
+            />
+          </div>
 
-            {error && <p className="auth-error">{error}</p>}
-
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? (
-                <span className="btn-loading">
-                  <span className="btn-spinner" />
-                  Please wait...
-                </span>
-              ) : isLogin ? 'Sign In' : 'Create Account'}
-            </button>
-          </form>
-
-          <p className="auth-toggle">
-            {isLogin ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={() => { setIsLogin(!isLogin); setError(''); }}>
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </p>
+          {error && <p className="auth-error">{error}</p>}
         </div>
       </div>
     </div>
