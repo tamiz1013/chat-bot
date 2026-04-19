@@ -237,6 +237,187 @@ router.post('/chat/stream', apiKeyAuth, rateLimiter, async (req, res) => {
   }
 });
 
+// POST /v1/prompt — send any prompt, get a direct LLM reply
+router.post('/prompt', apiKeyAuth, rateLimiter, async (req, res) => {
+  const startTime = Date.now();
+  const apiKey = req.apiKey;
+
+  const { prompt, messages, model, systemPrompt, temperature, maxTokens } = req.body;
+
+  // Accept either a simple prompt string or a full messages array
+  if (!prompt && (!messages || !Array.isArray(messages) || messages.length === 0)) {
+    return res.status(400).json({ error: 'Either "prompt" (string) or "messages" (array) is required' });
+  }
+
+  try {
+    let ollamaMessages = [];
+
+    if (messages) {
+      // Validate messages format
+      for (const msg of messages) {
+        if (!msg.role || !msg.content) {
+          return res.status(400).json({ error: 'Each message must have "role" and "content"' });
+        }
+        if (!['system', 'user', 'assistant'].includes(msg.role)) {
+          return res.status(400).json({ error: 'Message role must be "system", "user", or "assistant"' });
+        }
+      }
+      ollamaMessages = messages.map((m) => ({
+        role: m.role,
+        content: String(m.content).slice(0, 5000),
+      }));
+    } else {
+      if (systemPrompt) {
+        ollamaMessages.push({ role: 'system', content: String(systemPrompt).slice(0, 5000) });
+      }
+      ollamaMessages.push({ role: 'user', content: String(prompt).slice(0, 5000) });
+    }
+
+    const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model || MODEL,
+        messages: ollamaMessages,
+        stream: false,
+        options: {
+          temperature: temperature ?? 0.7,
+          num_predict: maxTokens ?? 1024,
+        },
+      }),
+    });
+
+    if (!ollamaRes.ok) {
+      const errText = await ollamaRes.text();
+      return res.status(502).json({ error: `LLM error: ${errText}` });
+    }
+
+    const data = await ollamaRes.json();
+    const reply = data.message?.content || 'Sorry, I could not generate a response.';
+
+    // Log usage
+    await UsageLog.create({
+      userId: apiKey.userId,
+      botId: req.bot._id,
+      apiKeyId: apiKey._id,
+      tokensEstimate: (data.eval_count || 0) + (data.prompt_eval_count || 0),
+      responseTimeMs: Date.now() - startTime,
+    });
+
+    res.json({
+      reply,
+      model: data.model || model || MODEL,
+      usage: {
+        totalTokens: (data.eval_count || 0) + (data.prompt_eval_count || 0),
+        responseTimeMs: Date.now() - startTime,
+      },
+    });
+  } catch (err) {
+    console.error('v1/prompt error:', err.message);
+    res.status(500).json({ error: 'Prompt request failed. Is Ollama running?' });
+  }
+});
+
+// POST /v1/prompt/stream — streaming version of prompt API
+router.post('/prompt/stream', apiKeyAuth, rateLimiter, async (req, res) => {
+  const startTime = Date.now();
+  const apiKey = req.apiKey;
+
+  const { prompt, messages, model, systemPrompt, temperature, maxTokens } = req.body;
+
+  if (!prompt && (!messages || !Array.isArray(messages) || messages.length === 0)) {
+    return res.status(400).json({ error: 'Either "prompt" (string) or "messages" (array) is required' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    let ollamaMessages = [];
+
+    if (messages) {
+      for (const msg of messages) {
+        if (!msg.role || !msg.content) {
+          res.write(`data: ${JSON.stringify({ error: 'Each message must have "role" and "content"' })}\n\n`);
+          return res.end();
+        }
+      }
+      ollamaMessages = messages.map((m) => ({
+        role: m.role,
+        content: String(m.content).slice(0, 5000),
+      }));
+    } else {
+      if (systemPrompt) {
+        ollamaMessages.push({ role: 'system', content: String(systemPrompt).slice(0, 5000) });
+      }
+      ollamaMessages.push({ role: 'user', content: String(prompt).slice(0, 5000) });
+    }
+
+    const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model || MODEL,
+        messages: ollamaMessages,
+        stream: true,
+        options: {
+          temperature: temperature ?? 0.7,
+          num_predict: maxTokens ?? 1024,
+        },
+      }),
+    });
+
+    if (!ollamaRes.ok) {
+      const errText = await ollamaRes.text();
+      res.write(`data: ${JSON.stringify({ error: `LLM error: ${errText}` })}\n\n`);
+      return res.end();
+    }
+
+    const reader = ollamaRes.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n').filter(Boolean);
+
+      for (const line of lines) {
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.message?.content) {
+            res.write(`data: ${JSON.stringify({ content: parsed.message.content })}\n\n`);
+          }
+          if (parsed.done) {
+            await UsageLog.create({
+              userId: apiKey.userId,
+              botId: req.bot._id,
+              apiKeyId: apiKey._id,
+              tokensEstimate: (parsed.eval_count || 0) + (parsed.prompt_eval_count || 0),
+              responseTimeMs: Date.now() - startTime,
+            });
+
+            res.write('data: [DONE]\n\n');
+            return res.end();
+          }
+        } catch {
+          // skip malformed
+        }
+      }
+    }
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err) {
+    console.error('v1/prompt/stream error:', err.message);
+    res.write(`data: ${JSON.stringify({ error: 'Prompt failed. Is Ollama running?' })}\n\n`);
+    res.end();
+  }
+});
+
 // GET /v1/chat/session/:sessionId — get conversation history
 router.get('/chat/session/:sessionId', apiKeyAuth, async (req, res) => {
   try {
