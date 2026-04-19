@@ -13,6 +13,7 @@ const keysRouter = require('./routes/keys');
 const dashboardRouter = require('./routes/dashboard');
 const v1Router = require('./routes/v1');
 const ttsRouter = require('./routes/tts');
+const sttRouter = require('./routes/stt');
 const paymentsRouter = require('./routes/payments');
 const adminRouter = require('./routes/admin');
 const { adminMiddleware } = require('./middleware/admin');
@@ -39,6 +40,9 @@ const dashboardOrigins = isProd
 const dashboardCors = cors({ origin: dashboardOrigins, credentials: true });
 // Public API + widget: any origin (protected by API key auth)
 const publicCors = cors();
+
+// ── STT route (before JSON body parser — needs raw multipart) ──
+app.use('/v1/stt', publicCors, sttRouter);
 
 app.use(express.json({ limit: '1mb' }));
 
