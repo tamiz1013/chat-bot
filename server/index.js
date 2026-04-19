@@ -12,6 +12,7 @@ const botsRouter = require('./routes/bots');
 const keysRouter = require('./routes/keys');
 const dashboardRouter = require('./routes/dashboard');
 const v1Router = require('./routes/v1');
+const ttsRouter = require('./routes/tts');
 const paymentsRouter = require('./routes/payments');
 const adminRouter = require('./routes/admin');
 const { adminMiddleware } = require('./middleware/admin');
@@ -52,6 +53,7 @@ app.use('/api/admin', dashboardCors, authMiddleware, adminMiddleware, adminRoute
 app.use('/api', dashboardCors, authMiddleware, chatRouter);       // ← catch-all LAST
 
 // ── Public API (API key protected) — open CORS ──
+app.use('/v1/tts', publicCors, ttsRouter);
 app.use('/v1', publicCors, v1Router);
 
 
